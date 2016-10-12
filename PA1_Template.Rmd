@@ -1,0 +1,150 @@
+---
+title: "Assignment-5_1"
+author: "Alexandre Miranda Bastos"
+date: "12 de outubro de 2016"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Question 1
+
+- Code for reading in the dataset and/or processing the data
+
+I´ve downloaded the data outside the R code and unzip it berofe use in the Assignment.
+For reading the dataset I use the function **read.csv()**, with the args activity.csv(the file to load), header=TRUE, sep=",").
+To transform the date data into a date attribute (to perform calculations) I use the **transform** function with the args Topic5_As1 as the data table to be transformed, and the conversion of date attribute to a date variable.
+
+```{r }
+knitr::opts_chunk$set(echo = TRUE)
+# To import the data from the file "activity.csv"
+Topic5_As1 = read.csv("activity.csv", header=TRUE, sep=",")
+# transforming the date data from text to date format
+Topic1_As1_DtTransf = transform(Topic5_As1, date = as.Date(date, format="%Y-%m-%d"))
+head(Topic1_As1_DtTransf)
+```
+
+## Question 2
+
+- Histogram of the total number of steps taken each day
+
+In that item I count the number of steps by day using the function **aggregate** to realize the sum
+of the counts of all records.
+And plot the histogram in the data generated.
+
+```{r }
+knitr::opts_chunk$set(echo = TRUE)
+# Sum the steps by day using the TOPIC_As1_DtTransf variable 
+SUM_STEPS_DAY = aggregate(steps ~ date, FUN = sum, data = Topic1_As1_DtTransf)
+# Ploting the Histogram with the total fo steps taken each day
+hist(SUM_STEPS_DAY$steps, xlab="Number of Steps", main="Total of steps Taken Each Day",col="green")
+
+```
+
+## Question 3
+
+- Mean and median number of steps taken each day
+
+In that item I only calculate the mean and median for the variable
+
+
+```{r }
+knitr::opts_chunk$set(echo = TRUE)
+# Mean of SUM_STEPS_DAY$steps
+MEAN_STEPS = mean(SUM_STEPS_DAY$steps)
+print(MEAN_STEPS)
+```
+
+```{r }
+knitr::opts_chunk$set(echo = TRUE)
+# Median of SUM_STEPS_DAY$steps
+MEDIAN_STEPS = median(SUM_STEPS_DAY$steps)
+print(MEDIAN_STEPS)
+```
+
+## Question 4
+
+- Time series plot of the average number of steps taken
+
+In that item we use the **aggregate** function again to generate the means of the steps in function of its intervals.
+
+```{r }
+knitr::opts_chunk$set(echo = TRUE)
+# Generating the data
+MEAN_STEPS_INTERV = aggregate(steps ~ interval, FUN=mean, data=Topic1_As1_DtTransf)
+#ploting the result
+plot(x=MEAN_STEPS_INTERV$interval, y=MEAN_STEPS_INTERV$steps, type="s", main="Average Number of Steps Taken", xlab="INTERVAL", ylab="STEPS", col = "red")
+```
+
+## Question 5
+
+- The 5-minute interval that, on average, contains the maximum number of steps
+
+In that question we ordered the variable generate in the last question and get the first line, that is tue answer for the question.
+
+```{r }
+knitr::opts_chunk$set(echo = TRUE)
+#Order the variable to find the highest value
+ORDER_AVER = MEAN_STEPS_INTERV[order(-MEAN_STEPS_INTERV$steps),]
+print(ORDER_AVER[1, ])
+```
+
+## Question 6
+
+- Code to describe and show a strategy for imputing missing data
+
+In that question we use the strategy of calculate the mean per 5-minute interval and then create a new dataset that is equal to the original but with the missing data filled in.
+
+```{r }
+knitr::opts_chunk$set(echo = TRUE)
+# Aggeregating the steps by interval and calculating its mean
+MEAN_INTERV = aggregate(steps ~ interval, FUN=mean, data=Topic1_As1_DtTransf)
+# Using Interval to merge the two datasets
+MERGE_Topic1_As1 = merge(x=Topic1_As1_DtTransf, y=MEAN_INTERV, by="interval")
+# Use the interval mean to fill in the column steps
+MERGE_Topic1_As1$steps <- ifelse(is.na(MERGE_Topic1_As1$steps.x), MERGE_Topic1_As1$steps.y, MERGE_Topic1_As1$steps.x) 
+# Creating a subset only with the columns steps, date and interval to use on the next step
+Sst_SDI = MERGE_Topic1_As1[c("steps", "date", "interval")]
+head(Sst_SDI)
+```
+
+## Question 7
+
+- Histogram of the total number of steps taken each day after missing values are imputed
+
+Updating the Histogram to represent the data when the missing values are imputed with the new value.
+
+
+```{r }
+knitr::opts_chunk$set(echo = TRUE)
+# aggregate by date and calculate sum
+SUBS_NA_NewData = aggregate(steps ~ date, FUN=sum, data=Sst_SDI)
+# Plotting new Data Histogram
+hist(SUBS_NA_NewData$steps, xlab="Number of Steps", main="Total Number of Steps/Day - No NA",col="blue")
+```
+
+## Question 8
+
+- Panel plot comparing the average number of steps taken per 5-minute interval across weekdays and weekends
+
+To answer this question a new variable is necessary. I create it in the "Sst_SDI" variable to distinguish betwen a weekend day or weekdays.
+Then I create a plot for comparing the category.To better inplement this graphs, I load de lattice library for better visualization.
+
+
+```{r }
+knitr::opts_chunk$set(echo = TRUE)
+# create new variable to distinguish from weekend to weekday filling the # new column with weekend value if it is saturday or ssunday or weekday in the other side 
+Sst_SDI$weekdays = as.factor(ifelse(weekdays(Sst_SDI$date, abbreviate = FALSE) %in% c("Saturday", "Sunday"), "weekend", "weekday"))
+
+# loading lattice package to use the plot function xyplot
+library(lattice)
+# Using weekday to aggregating the data and using function mean
+Sst_SDI_Wkday <- aggregate(steps ~ weekdays + interval, FUN=mean, data=Sst_SDI)
+
+# Generating the plot to campare the two class of days
+xyplot(steps ~ interval | weekdays, Sst_SDI_Wkday, type = "l", xlab = "Interval", ylab = "Number of Steps", main = "Average Number of Steps Considering Distinguished Weekdays", layout = c(1, 2))
+```
+
+**OBS: Instead of searcching for the error occurring in this last exercise I did not find. The function to distinguish from a Weekday to a weekend day doesn´t work good, generating only "weekday" value.** 
